@@ -1,0 +1,70 @@
+<!-- https://cs.indstate.edu/~cs60913/keyboardDemo.html -->
+
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, intitial-scale=1.0">
+    <title>Keyboard</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .board {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            /* bring your own prefixes */
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            flex-direction: row;
+            gap: 4px;
+        }
+
+        .letter {
+            font-family: monospace;
+            font-size: 40px;
+            border: black solid 2px;
+            text-align: center;
+            background-color: grey;
+            min-height: 64px;
+            min-width: 64px;
+            padding-top: 6px;
+            border-radius: 15px;
+        }
+    </style>
+
+    <script src="keyboard.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            callback = function (ch) {
+                alert(ch);
+            }
+
+            let keyboard = new Keyboard(callback)
+            let board = document.querySelector('.board')
+            board.appendChild(keyboard.div)
+        })
+    </script>
+</head>
+
+<body>
+    <div>
+        <div class="board"></div>
+    </div>
+</body>
+
+</html>
