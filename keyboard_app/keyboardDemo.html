@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+    </title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121213;
+        }
+
+        .board {
+            background-color: #121213;
+            padding-top: 100px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .word {
+            background-color: #121213;
+
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .letter {
+            font-family: monospace;
+            font-size: 40px;
+            border: #3A3A3C solid 2px;
+            text-align: center;
+            min-height: 64px;
+            min-width: 64px;
+            padding-top: 16px;
+            color: white;
+            background-color: #121213;
+        }
+    </style>
+
+    <script type='module'>
+
+        // px = pixels
+        // cm, mm, in = actual distances
+        // %, rem = width of m, em = width of m is current font, ex = height of x, ch = width of 0, vw = 1% of window, vh = 1% of height 
+
+        import { wordlist } from './wordlist.js';
+        import { guessobject } from './guessobject.js';
+        // import {keyboard} from 'https://cs.indstate/~cs60901/keyboard.js';
+        import { Keyboard } from './keyboard.js';
+
+        const NROWS = 6
+        const NCOLS = 5
+        const NCELLS = NROWS * NCOLS
+
+        window.addEventListener('load', (event) => {
+            const wordle = document.querySelector('.wordle')
+
+            class Letter {
+                constructor(ch) {
+                    Object.assign(this, { ch })                   // displayed character saved twice. explain.
+                    this.div = document.createElement('div')
+                    this.div.className = 'letter'
+                    this.div.innerHTML = ch
+                }
+            }
+            class Word {
+                constructor() {
+                    this.div = document.createElement('div')
+                    this.div.className = 'word'
+                    this.letters = new Array(NCOLS)             // to be filled with Letters
+                    this.letterno = 0                           // a cursor
+                    for (let i = 0; i < NCOLS; i++) {
+                        let letter = new Letter(' ')
+                        this.letters[i] = letter
+                        this.div.appendChild(letter.div)
+                    }
+                }
+                addLetter(ch) {                                  // add a letter to the current word, if there's room.
+                    if (this.letterno < NCOLS) {
+                        let x = this.letters[this.letterno++]
+                        x.ch = x.div.innerHTML = ch
+                    }
+                }
+                backspace() {                                   // handle the backspace character, erase a letter.
+                    if (this.letterno > 0) {
+                        let x = this.letters[--this.letterno]
+                        x.ch = x.div.innerHTML = ' '
+                    }
+                }
+                validguess() {                                                 // called when Enter is pressed
+                    let guessed = this.letters.map((x) => x.ch).join("")       // construct a string of the word
+                    return guessobject.hasOwnProperty(guessed.toLowerCase())
+                }
+                checkword(keyword, colors) {                     // evaluate a valid guessed word
+                    let fb = new Array(NCOLS).fill(0)           // the Feedback array, with 0's, 1's and 2's.
+                    let wordcopy = keyword.split("")            // make an array out of the keyword
+                    for (let i = 0; i < NCOLS; i++) {                   // first find correct letters in correct position
+                        if (this.letters[i].ch === wordcopy[i]) {
+                            fb[i] = 2
+                            wordcopy[i] = ' '                   // remove to prevent getting double credit 
+                        }
+                    }
+                    for (let i = 0; i < NCOLS; i++) {
+                        if (fb[i] === 0) {
+                            let c = this.letters[i].ch
+                            let k = wordcopy.indexOf(c)         // returns -1 if letter not in word
+                            if (k >= 0) {                         // letter is in word
+                                fb[i] = 1
+                                wordcopy[k] = ' '
+                            }
+                        }
+                    }
+                    for (let i = 0; i < NCOLS; i++)                    // recolor guessed letters
+                        this.letters[i].div.style.backgroundColor = colors[fb[i]]
+                    return fb.every(x => x === 2)               // return true if they guessed the correct word
+                }
+            }
+            class Board {
+                constructor() {
+                    this.keyword = wordlist[parseInt(Math.random() * wordlist.length)].toUpperCase()
+                    this.colorlist = ["#3A3A3C", "#B59F3B", "#6AAA64"]    // background colors for after word is guessed
+                    this.div = document.createElement('div')
+                    this.div.className = 'board'
+                    this.words = new Array(NROWS)
+                    this.wordno = 0
+                    this.gameover = false
+                    for (let i = 0; i < NROWS; i++) {
+                        let row = new Word()
+                        this.words[i] = row
+                        this.div.appendChild(row.div)
+                    }
+                }
+                processWord() {                                 // runs when user types Enter
+                    let w = this.words[this.wordno]
+                    if (w.letterno !== NCOLS)                    // the guess isn't finished, ignore the Enter
+                        return;                                 // next: handle the guess, recolored the guessed letters, etc.
+                    if (!w.validguess()) {
+                        setTimeout(() => alert('Not a valid guess.'), 1)
+                        return
+                    }
+                    let result = w.checkword(this.keyword, this.colorlist)
+                    if (result) {                                 // game over because the player guessed the keyword.
+                        this.gameover = true
+                        setTimeout(() => alert(`You win in ${this.wordno + 1} guesses.`), 1)
+                        return
+                    }
+                    if (this.wordno === NROWS - 1) {                // game over because player guessed 6 words
+                        this.gameover = true
+                        setTimeout(() => alert(`You lose, the word is ${this.keyword}.`), 1)
+                        return
+                    }
+                    this.wordno++                               // otherwise, start guessing another word
+                }
+            }
+
+            let board = new Board()
+            wordle.appendChild(board.div)
+
+            function callback(e) {
+                let key = (e.target || e.srcElement).innerHTML
+                if (board.gameover)
+                    return
+                let code = key
+                let word = board.words[board.wordno]
+                if (code >= 'a' && code <= 'z') {               // add a letter
+                    word.addLetter(code.toUpperCase())
+                } else if (code == '\u232B') {         // backspace over a letter
+                    word.backspace()
+                } else if (code == 'ENTER') {             // submit a word
+                    board.processWord()
+                }
+
+            }
+            // // get keyboard
+            let keyboard = new Keyboard(callback)
+            wordle.appendChild(keyboard.div)
+
+            window.addEventListener('keydown', (click) => {
+                callback()
+            })
+        })
+    </script>
+</head>
+
+<body>
+    <main class='wordle'>
+    </main>
+</body>
+
+</html>
